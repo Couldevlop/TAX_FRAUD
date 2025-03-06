@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - fraud-detection
+    environment:
+      - DATABASE_URL=postgresql://user:123@db:5432/tax_db
+
+  fraud-detection:
+    build: ./fraud-detection
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./fraud-detection/models:/app/models
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: tax_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: 123
+    ports:
+      - "5432:5432"
