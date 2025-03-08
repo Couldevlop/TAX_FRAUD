@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from fraud_detection.models.predict import FraudPredictor
+from models.predict import FraudPredictor
+from models.train_model import train_models
+import pandas as pd
+import numpy as np
+import os
 
 app = FastAPI(
     title="Fraud Detection Microservice",
@@ -8,7 +12,17 @@ app = FastAPI(
     version="1.0.0"
 )
 
-predictor = FraudPredictor()
+# Initialisation du prédicteur
+model_path = "/app/models/"
+if not all(os.path.exists(f"{model_path}{model}.pkl") for model in ["scaler", "iso_forest", "xgboost", "neural_net"]):
+    # Données simulées pour l'entraînement
+    data = pd.DataFrame({
+        'amount': np.random.uniform(10000, 1000000, 1000),
+        'fiscal_year': np.random.randint(2020, 2024, 1000)
+    })
+    train_models(data, save_path=model_path)
+
+predictor = FraudPredictor(model_path=model_path)
 
 class DeclarationInput(BaseModel):
     amount: float

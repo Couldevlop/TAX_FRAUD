@@ -1,7 +1,7 @@
 import httpx
 from sqlalchemy.orm import Session
 from app.models.tax import Declaration
-from app.repositories.tax_repository import TaxRepository
+from app.repository.tax_repository import TaxRepository
 
 class FraudService:
     def __init__(self, db: Session):
@@ -10,7 +10,7 @@ class FraudService:
 
     async def detect_fraud(self, declaration: Declaration) -> dict:
         # Préparation des données pour le microservice
-        data Living = {
+        data = {
             "amount": declaration.amount,
             "fiscal_year": declaration.fiscal_year
         }

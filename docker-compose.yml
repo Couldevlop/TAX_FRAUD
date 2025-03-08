@@ -1,27 +1,72 @@
 version: "3.8"
+
 services:
-  backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-      - fraud-detection
-    environment:
-      - DATABASE_URL=postgresql://user:123@db:5432/tax_db
-
-  fraud-detection:
-    build: ./fraud-detection
-    ports:
-      - "8001:8001"
-    volumes:
-      - ./fraud-detection/models:/app/models
-
   db:
     image: postgres:13
     environment:
-      POSTGRES_DB: tax_db
       POSTGRES_USER: user
       POSTGRES_PASSWORD: 123
+      POSTGRES_DB: tax_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - tax_fraud_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command:
+      [
+        "./wait-for-db.sh",
+        "db",
+        "5432",
+        "uvicorn",
+        "app.main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+      ]
+    ports:
+      - "8000:8000" # Ajoutez cette ligne
+    depends_on:
+      - db
+    networks:
+      - tax_fraud_network
+
+  data-generator:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command:
+      [
+        "sh",
+        "-c",
+        "sleep 10 && ./wait-for-db.sh db 5432 python test_data_generator.py",
+      ]
+    depends_on:
+      - db
+      - backend
+    networks:
+      - tax_fraud_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - tax_fraud_network
+
+networks:
+  tax_fraud_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
